@@ -1,0 +1,296 @@
+King County Houses Exploration by Nadiya Sitdykova
+========================================================
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using
+# in your analysis in this code chunk.
+
+# Notice that the parameter "echo" was set to FALSE for this code chunk.
+# This prevents the code from displaying in the knitted HTML output.
+# You should set echo=FALSE for all code chunks in your file.
+
+library(ggplot2)
+library(reshape2)
+library(lubridate)
+```
+This report explores a dataset containing prices and attributes for approximately 22,000 houses.
+
+```{r echo=FALSE, Load_the_Data}
+# Load the Data
+kc_house <- read.csv("kc_house_data.csv")
+# subset columns of interest
+kc_house <- kc_house[c('date', 'price', 'bedrooms', 'bathrooms', 'sqft_living', 
+                       'sqft_lot', 'waterfront', 'view', 'condition', 
+                       'yr_built', 'yr_renovated')]
+
+# add new columns
+kc_house <- transform(kc_house, price_thousands = price / 1000)
+kc_house <- transform(kc_house, yr_build_or_renovated = max(yr_built, yr_renovated))
+# add day and month from date
+formatted_date <- strptime(kc_house$date, "%Y%m%dT000000")
+kc_house$day <- day(formatted_date)
+kc_house$month <- month(formatted_date)
+
+# process factors
+kc_house$waterfront <- factor(kc_house$waterfront, levels = c(0, 1), ordered = T)
+kc_house$view <- factor(kc_house$view, levels = c(0:4), ordered = T)
+kc_house$condition <- factor(kc_house$condition, levels = c(1:5), ordered = T)
+kc_house$day <-factor(kc_house$day, levels = c(1:31), ordered = T)
+kc_house$month <- factor(kc_house$month, levels = c(1:12), ordered = T)
+```
+# Univariate Plots Section
+```{r echo=FALSE, Univariate_Plots}
+dim(kc_house)
+```
+
+```{r echo=FALSE, Univariate_Plots}
+str(kc_house)
+```
+
+Our dataset consists of 21 variables, with almost 22,000 observations.
+
+```{r echo=FALSE, Univariate_Plots}
+summary(kc_house)
+```
+
+
+
+```{r echo=FALSE, Univariate_Plots}
+ggplot(data = kc_house, aes(x = price_thousands)) +
+  geom_histogram(binwidth = 100)
+```
+
+```{r echo=FALSE, Univariate_Plots}
+ggplot(data = kc_house, aes(x = price_thousands)) +
+  geom_histogram(binwidth = 0.01) +
+  scale_x_log10(breaks = c(0, 100, 200, 450, 1500, 4000))
+```
+
+Above is original and transformed data. As an original plot has a long tail, logarithmic trahsformations was appplied for better understanding of the price distribution. The tranformed price distribution appears to be approximately normal with the price peaking around 450 thousands. Now let's see how this plot looks like across the categorical variables of waterfornt, view and condition.
+
+```{r echo=FALSE, Univariate_Plots}
+ggplot(data = kc_house, aes(x = waterfront)) +
+  geom_bar()
+```
+
+```{r echo=FALSE, Univariate_Plots}
+ggplot(data = kc_house, aes(x = view)) +
+  geom_bar()
+```
+
+```{r echo=FALSE, Univariate_Plots}
+ggplot(data = kc_house, aes(x = condition)) +
+  geom_bar()
+```
+
+As we can see, the most houses are not overlooking the waterfront and have view graded as zero. Condition is skewed to the right, with most houses of condition 3 and greater. Also interesting to look at the distribution of day and month when house was sold.
+
+```{r echo=FALSE, Univariate_Plots}
+ggplot(data = kc_house, aes(x = month)) +
+  geom_bar()
+```
+
+```{r echo=FALSE, Univariate_Plots}
+ggplot(data = kc_house, aes(x = day)) +
+  geom_bar()
+```
+
+The month data has a peak around May, and have significantly lower count of sold houses in the beginning of the year. Distribution of days looks uniform, with significantly low value at 31st. But this could be explained by absense of 31st in about a half of months, so no surprise here.
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plots}
+ggplot(data = kc_house, aes(x = bedrooms)) +
+  geom_histogram(binwidth = 1) +
+  scale_x_continuous(limits = c(0, 11))
+```
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plots}
+ggplot(data = kc_house, aes(x = bedrooms)) +
+  geom_histogram(binwidth = 0.25) +
+  scale_x_continuous(breaks = seq(0, 11, 1), limits = c(0, 11))
+```
+
+```{r echo=FALSE, Univariate_Plots}
+summary(kc_house$bedrooms)
+```
+
+```{r echo=FALSE, Univariate_Plots}
+table(kc_house$bedrooms)
+```
+The smaller houses has 0 bedrooms and the largest one has 33 bedrooms (wow!). The plots above exclude the house with 33 bedrooms as it's clearly an outlier. All houses has whole number of bedrooms and most popular are houses with 3 bedrooms.
+
+```{r echo=FALSE, Univariate_Plots}
+ggplot(data = kc_house, aes(x = bathrooms)) +
+  geom_histogram()
+```
+
+```{r echo=FALSE, Univariate_Plots}
+ggplot(data = kc_house, aes(x = bathrooms)) +
+  geom_histogram(binwidth = 0.1) +
+  scale_x_continuous(breaks = seq(0, 8, 0.5))
+```
+
+```{r echo=FALSE, Univariate_Plots}
+summary(kc_house$bathrooms)
+```
+
+```{r echo=FALSE, Univariate_Plots}
+table(kc_house$bathrooms)
+```
+The maximal nuber of bathrooms is 8 and all values of bathrooms are multiplies of 0.25. Most popular houses have 2.5 bathrooms. What is suspicious, that is a ten houses with zero bathrooms. Let's look at this houses closer.
+```{r echo=FALSE}
+subset(kc_house, bathrooms == 0)
+```
+I guess it is what it is: some houses don't have bathrooms. Other information about those houses looks valid.
+```{r echo=FALSE, Univariate_Plots}
+ggplot(data = kc_house, aes(x = sqft_living)) +
+  geom_histogram() 
+```
+
+```{r echo=FALSE, Univariate_Plots}
+ggplot(data = kc_house, aes(x = sqft_living)) +
+  geom_histogram(binwidth = 0.01) +
+  scale_x_log10(breaks = c(0, 500, 1000, 2000, 10000))
+```
+
+```{r echo=FALSE, Univariate_Plots}
+summary(kc_house$sqft_living)
+```
+Above is original and transformed data. As an original plot has a long tail, logarithmic trahsformations was appplied for better understanding of the living area distribution. Most houses have a living area between 1400 sqft and 2600 sqft: median 1910 sqft and mean 2080 sqft.
+```{r echo=FALSE, Univariate_Plots}
+ggplot(data = kc_house, aes(x = sqft_lot)) +
+  geom_histogram() 
+```
+
+```{r echo=FALSE, Univariate_Plots}
+ggplot(data = kc_house, aes(x = sqft_lot)) +
+  geom_histogram() +
+  scale_x_log10(breaks = c(1000, 3000, 8000, 100000, 1000000))
+```
+
+```{r echo=FALSE, Univariate_Plots}
+summary(kc_house$sqft_lot)
+```
+And again, we applied logarithmic trahsformation to the lot area. Most houses have a lot area between 5040 sqft and 10690 sqft: median 7618 sqft and mean 15110 sqft.
+
+```{r echo=FALSE, Univariate_Plots}
+ggplot(data = kc_house, aes(x = yr_built)) +
+  geom_histogram(binwidth = 1) 
+```
+
+```{r echo=FALSE, Univariate_Plots}
+summary(kc_house$yr_built)
+```
+
+Interestingly, this plot in some degree shows economic situation in the country. For example we can see the lowest values around 1930 (Great Depression) and drop around 2008 (Financial Crisis). Significantly low value for 2015 can be explained by the fact, that data collected from May 2014 to May 2015. Most houses was built between 1975 and 1997.
+
+```{r echo=FALSE, Univariate_Plots}
+ggplot(data = kc_house, aes(x = yr_renovated)) +
+  geom_histogram()
+```
+
+```{r echo=FALSE, Univariate_Plots}
+ggplot(data = subset(kc_house, yr_renovated > 0), aes(x = yr_renovated)) +
+  geom_histogram(binwidth = 1)
+```
+
+```{r echo=FALSE, Univariate_Plots}
+table(kc_house$yr_renovated)
+```
+```{r echo=FALSE, Univariate_Plots}
+kc_house_renovated = subset(kc_house, yr_renovated > 0)
+summary(kc_house_renovated$yr_renovated)
+```
+
+I excluded data for not renovated houses in second plot in order to zoom in for data around 2000. We can see that a lot of renovations was made in 2014, which is understandable: owners renovated their old houses right before sale. Amongst renovated houses most of them were renovated between 1987 and 2007: median 2000 and mean 1996.
+
+# Univariate Analysis
+
+### What is the structure of your dataset?
+There are 21,613 houses in the dataset with 10 features (date, price, bedrooms, bathrooms, sqft_living, sqft_lot, waterfront, view, condition, yr_built, yr_renovated). The variables waterfront, view, and condition, are ordered factor variables with the following levels.
+
+(worst) —————-> (best)
+waterfront: 0, 1
+view: 0, 1, 2, 3, 4
+condition: 1, 2, 3, 4, 5
+
+Other observations:
+
+*
+*
+*
+*
+*
+
+### What is/are the main feature(s) of interest in your dataset?
+The main features of interest in the dataset is price. I’d like to determine which features are best for predicting the price of a house. I suspect some combination of the variables can be used to build a predictive model to price houses.
+
+### What other features in the dataset do you think will help support your investigation into your feature(s) of interest?
+View, condition, bedrooms, sqft_living, sqft_lot and yr_build are likely contribute to the price of a house. I think sqft_living, condition and yr_build contribute most to the price after researching information on house prices. One of the most importat things in house pricing is location. But I decided to exclude this variable as the all data is from the same county.
+
+### Did you create any new variables from existing variables in the dataset?
+I created two variable for the day and month of purchase of using the information from date. I've heard that during winter prices are lower, so it was particulary interesting for me to check this.
+
+### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
+
+I log-transformed the right skewed price, sqft_living and sqft_lot ditstributions. 
+
+# Bivariate Plots Section
+```{r echo=FALSE, Bivariate_Plots}
+
+```
+
+# Bivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the investigation. How did the feature(s) of interest vary with other features in the dataset?
+
+### Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?
+
+### What was the strongest relationship you found?
+
+
+
+
+# Multivariate Plots Section
+
+```{r echo=FALSE, Multivariate_Plots}
+
+```
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the investigation. Were there features that strengthened each other in terms of looking at your feature(s) of interest?
+
+### Were there any interesting or surprising interactions between features?
+
+### OPTIONAL: Did you create any models with your dataset? Discuss the strengths and limitations of your model.
+
+------
+
+# Final Plots and Summary
+
+### Plot One
+```{r echo=FALSE, Plot_One}
+
+```
+
+### Description One
+
+
+### Plot Two
+```{r echo=FALSE, Plot_Two}
+
+```
+
+### Description Two
+
+
+### Plot Three
+```{r echo=FALSE, Plot_Three}
+
+```
+
+### Description Three
+
+------
+
+# Reflection

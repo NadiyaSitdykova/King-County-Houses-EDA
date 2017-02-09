@@ -10,8 +10,11 @@ King County Houses Exploration by Nadiya Sitdykova
 # You should set echo=FALSE for all code chunks in your file.
 
 library(ggplot2)
-library(reshape2)
-library(lubridate)
+library(GGally)
+library(date)
+library(memisc)
+library(Hmisc)
+library(psych)
 ```
 This report explores a dataset containing prices and attributes for approximately 22,000 houses.
 
@@ -23,13 +26,13 @@ kc_house <- kc_house[c('date', 'price', 'bedrooms', 'bathrooms', 'sqft_living',
                        'sqft_lot', 'waterfront', 'view', 'condition', 
                        'yr_built', 'yr_renovated')]
 
+# add day and month from date
+formatted_date <- strptime(kc_house$date, "%Y%m%dT000000")
+kc_house$month <- month(formatted_date)
+kc_house$day <- day(formatted_date)
 # add new columns
 kc_house <- transform(kc_house, price_thousands = price / 1000)
 kc_house <- transform(kc_house, yr_build_or_renovated = max(yr_built, yr_renovated))
-# add day and month from date
-formatted_date <- strptime(kc_house$date, "%Y%m%dT000000")
-kc_house$day <- day(formatted_date)
-kc_house$month <- month(formatted_date)
 
 # process factors
 kc_house$waterfront <- factor(kc_house$waterfront, levels = c(0, 1), ordered = T)
@@ -235,19 +238,248 @@ I created two variable for the day and month of purchase of using the informatio
 I log-transformed the right skewed price, sqft_living and sqft_lot ditstributions. 
 
 # Bivariate Plots Section
+
 ```{r echo=FALSE, Bivariate_Plots}
+set.seed(20022012)
+house_samp <- kc_house[sample(1:length(kc_house$price), 10000), c(2:12)]
+ggpairs(house_samp, 
+  lower = list(continuous = wrap("points", shape = I('.'))), 
+  upper = list(combo = wrap("box", outlier.shape = I('.'))))
+```
+
+The numbers of bedrooms and bathrooms tend to correlate with each other. The greater number of bathrooms or bedrooms, then the larger the whole living area of the house. Price correlates strongly with living area and number of bathrooms and bedrooms.
+
+From this data, sqft_lot, yr_built and yr_renovated do not seem to have significatn correlations with price, but year when house was built moderately correlates with number of bathrooms and living area. I want to look closer at scatter plots involving price and some other variables like sqft_living, sqft_lot, bedrooms, bathrooms, yr_built, yr_renovated.
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = sqft_living, y = price_thousands)) +
+  geom_point(alpha = 1/20) +
+  xlim(0, quantile(kc_house$sqft_living, 0.99)) +
+  ylim(0, quantile(kc_house$price_thousands, 0.99)) +
+  geom_smooth()
+```
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = round(sqft_living / 100) * 100, y = price_thousands)) +
+  geom_point(alpha = 1/20, color = "orange") +
+  xlim(0, quantile(kc_house$sqft_living, 0.99)) +
+  ylim(0, quantile(kc_house$price_thousands, 0.99)) +
+  geom_line(stat = "summary", fun.y = "mean") +
+  geom_line(stat = "summary", fun.y = "median", color = "blue") + 
+  geom_line(stat = "summary", fun.y = "quantile", fun.args = list(probs = .1), color = "blue", linetype = 2) +  
+  geom_line(stat = "summary", fun.y = "quantile", fun.args = list(probs = .9), color = "blue", linetype = 2)
+```
+
+As living area increases, the variance in price increases. The most houses represent a cloud with a high density below 700 thousands price. The relationship between price and sqft_living appears to be exponential rather than linear.
+
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = sqft_lot, y = price_thousands)) +
+  geom_point(alpha = 1/20, position = 'jitter') +
+  xlim(0, quantile(kc_house$sqft_lot, 0.9)) +
+  ylim(0, quantile(kc_house$price_thousands, 0.9))
+```
+There is no much correlation between price and sqft_lot, but we can see some vertical bands where many houses with the same lot area have different price points. This bands could be explained by estimating lot area with the round values.
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = bedrooms, y = price_thousands)) +
+  geom_point()
+```
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = bedrooms, y = price_thousands)) +
+  geom_point(alpha = 1/20, position = 'jitter') +
+  xlim(0, quantile(kc_house$bedrooms, 0.99)) +
+  ylim(0, quantile(kc_house$price_thousands, 0.99))
+```
+```{r echo=FALSE, Bivariate_Plots}
+with(kc_house, cor.test(bedrooms, price_thousands))
+```
+
+Again, the tall vertical strips indicate bedrooms numbers are integers. Adding jitter, transparency, and changing the plot limits lets us see the slight correlation between bedrooms and price.
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = bathrooms, y = price_thousands)) +
+  geom_point()
+```
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = bathrooms, y = price_thousands)) +
+  geom_point(alpha = 1/20, position = 'jitter') +
+  xlim(0, quantile(kc_house$bathrooms, 0.99)) +
+  ylim(0, quantile(kc_house$price_thousands, 0.99)) +
+  geom_smooth()
+```
+```{r echo=FALSE, Bivariate_Plots}
+with(kc_house, cor.test(bathrooms, price_thousands))
+```
+
+
+Then again, the tall vertical strips indicate bathrooms numbers are multiplies 0.25. Adding jitter, transparency, and changing the plot limits lets us see the correlation between bathrooms and price.
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = yr_built, y = price_thousands)) +
+  geom_point()
+```
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = yr_built, y = price_thousands)) +
+  geom_point(alpha = 1 / 20, position = 'jitter') +
+  xlim(min(kc_house$yr_built), quantile(kc_house$yr_built, 0.99)) +
+  ylim(0, quantile(kc_house$price_thousands, 0.99)) +
+  geom_line(stat = "summary", fun.y = "mean") +
+  geom_line(stat = "summary", fun.y = "median", color = "blue") + 
+  geom_line(stat = "summary", fun.y = "quantile", fun.args = list(probs = .1), color = "blue", linetype = 2) +  
+  geom_line(stat = "summary", fun.y = "quantile", fun.args = list(probs = .9), color = "blue", linetype = 2)
+```
+
+We can see two outliers with price over 4000 before 1950 and significantly more houses with extremely high price built after 1975. Adding transparency and adjusting limits didn't reveal any strong patterns. We can see that medain and mean stays approximately same for different yr_built. But what is clear, is that most houses was built after 1950, as we can see there are more points there.
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house_renovated, aes(x = yr_renovated, y = price_thousands)) +
+  geom_point()
+```
+
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house_renovated, aes(x = yr_renovated, y = price_thousands)) +
+  geom_point(alpha = 1/10) +
+  geom_line(stat = 'summary', fun.y = 'median')
+```
+
+Amongst renovated houses we can see weak correlation between price and yr_renovated. Also form this plot it's clear that most houses was renovated recently.
+
+Next, I’ll look at how the categorical features vary with sqft_living and price.
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = waterfront, y = sqft_living)) +
+  geom_boxplot() +
+  ylim(0, quantile(kc_house$sqft_living, 0.99))
+```
+In general houses with waterfront seems to have larger living area.
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = waterfront, y = price_thousands)) +
+  geom_boxplot() +
+  ylim(0, quantile(kc_house$price_thousands, 0.99))
+```
+```{r echo=FALSE, Bivariate_Plots}
+with(kc_house, cor.test(price_thousands, as.numeric(waterfront), method = 'spearman', conf.level = 0.95, exact = FALSE))
+```
+
+Houses with waterfront seems to have a higher price, but we also should remember that in could be partially result of larger living area. Variation of price is higher for houses with waterfront. Spearman's coefficient shows us that correlation is very weak.
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = view, y = sqft_living)) +
+  geom_boxplot() +
+  ylim(0, quantile(kc_house$sqft_living, 0.99))
+```
+There is a tendency that houses with better view have larger living area.
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = view, y = price_thousands)) +
+  geom_boxplot() +
+  ylim(0, quantile(kc_house$price_thousands, 0.99))
+```
+```{r echo=FALSE, Bivariate_Plots}
+with(kc_house, cor.test(price_thousands, as.numeric(view), method = 'spearman', conf.level = 0.95, exact = FALSE))
 
 ```
+
+Houses with better view seems to have higher price, but then again, we should'n forget about posible effect of larger living area.
+Variation of price have a tendency to increase with better levels of view. Spearmans rank shows us the a weak correlation.
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = condition, y = sqft_living)) +
+  geom_boxplot() +
+  ylim(0, quantile(kc_house$sqft_living, 0.99))
+```
+```{r echo=FALSE, Bivariate_Plots}
+by(kc_house$sqft_living, kc_house$condition, summary)
+```
+
+It seems that houses with poor condition (below 3) have smaller living area, but for other conditions sqft_living distributions are similar. Although condition 3 have highest median and 25%, 75% quantiles. 
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = condition, y = price_thousands)) +
+  geom_boxplot() +
+  ylim(0, quantile(kc_house$price_thousands, 0.99))
+```
+```{r echo=FALSE, Bivariate_Plots}
+by(kc_house$price_thousands, kc_house$condition, summary)
+```
+
+```{r echo=FALSE, Bivariate_Plots}
+with(kc_house, cor.test(price_thousands, as.numeric(condition), method = 'spearman', conf.level = 0.95, exact = FALSE))
+```
+
+Here we see the similar to living area picture. First two conditions have lower price, but other conditions are not very different. Although excellent condition(5) has highest quartiles for price. Spearmans rank shows us very weak correlation.
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = month, y = sqft_living)) +
+  geom_boxplot() +
+  ylim(0, quantile(kc_house$sqft_living, 0.99))
+```
+It seems that living area have similar distributions during different month, but let's zoom in.
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = month, y = sqft_living)) +
+  geom_boxplot() +
+  coord_cartesian(ylim = c(1000, 3000))
+```
+```{r echo=FALSE, Bivariate_Plots}
+by(kc_house$sqft_living, kc_house$month, summary)
+```
+
+The highest living area median is in July (1950 sqft) and the lowest median is in February(1830 sqft). But actually 120 sqft is not much difference for houses, so I woudn't say that living area isn't similar by months.
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = month, y = price_thousands)) +
+  geom_boxplot() +
+  ylim(0, quantile(kc_house$price_thousands, 0.99))
+```
+Let's zoom in
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = kc_house, aes(x = month, y = price_thousands)) +
+  geom_boxplot() +
+  coord_cartesian(ylim = c(250, 750))
+```
+
+```{r echo=FALSE, Bivariate_Plots}
+by(kc_house$price_thousands, kc_house$month, summary)
+```
+
+```{r echo=FALSE, Bivariate_Plots}
+with(kc_house, cor.test(price_thousands, as.numeric(month), method = 'spearman', conf.level = 0.95, exact = FALSE))
+```
+
+Then again, the highest median price is in June and July (465 thousands) and the lowest median price is in February (425.5 thousands). In general there is kind of peak in summer and slight price drop in winter. So, I guess, seasons affect the price very slightly, if at all. Spearmans rank shows us very weak correlation.
 
 # Bivariate Analysis
 
 ### Talk about some of the relationships you observed in this part of the investigation. How did the feature(s) of interest vary with other features in the dataset?
 
+Price correlates strongly with living area and number of bathrooms. Also price slightly correlates with number of bedrooms. I found this interesting, that number of bathrooms correlates with price stronger, than with number of bathrooms.
+
+As living area increases, the variance in price increases. In the plot of price vs sqft_living The most houses represent a cloud with a high density below 700 thousands price. The relationship between price and sqft_living appears to be exponential rather than linear.
+
+From this data, sqft_lot, yr_built and yr_renovated do not seem to have significatn correlations with price, but year when house was built moderately correlates with number of bathrooms and living area.
+
+Houses overlooking waterfrong have much higher median price than houses without waterfront. Also price variance is higher for houses with waterfront.
+
+Houses with better levels of view and condition tend to occur more often at lower prices while houses with worse levels of view and condition tend to occur more often at higher prices.
+
+Houses in condition 3 out of 5 have the highes median living area. The median price for condition 4 is lower than for condition 3, which is interesting.
+
+Variation of price have a tendency to increase with better levels of view and then decrease for excellent view (4).
+
+The highest median price is in June and July and the lowest median price is in February. The median price is typically lower in winter and higher in summber.
+
 ### Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?
+
+The numbers of bedrooms and bathrooms tend to correlate with each other. The greater number of bathrooms or bedrooms, then the larger the whole living area of the house which makes sense.
 
 ### What was the strongest relationship you found?
 
-
+The price of a house is positively and strongly correlated with living area. Number of bedrooms and bathrooms correlate with the price, but less strongly than living area. Variable sqft_living could be used in a model to make house price predictions. But we shouldn't use bathrooms and bedrooms then, because they measuring the same quality and show strong correlation with sqft_living.
 
 
 # Multivariate Plots Section
@@ -256,6 +488,37 @@ I log-transformed the right skewed price, sqft_living and sqft_lot ditstribution
 
 ```
 
+```{r echo=FALSE, Multivariate_Plots}
+
+```
+
+```{r echo=FALSE, Multivariate_Plots}
+
+```
+
+```{r echo=FALSE, Multivariate_Plots}
+
+```
+
+```{r echo=FALSE, Multivariate_Plots}
+
+```
+
+```{r echo=FALSE, Multivariate_Plots}
+
+```
+
+```{r echo=FALSE, Multivariate_Plots}
+
+```
+
+```{r echo=FALSE, Multivariate_Plots}
+
+```
+
+```{r echo=FALSE, Multivariate_Plots}
+
+```
 # Multivariate Analysis
 
 ### Talk about some of the relationships you observed in this part of the investigation. Were there features that strengthened each other in terms of looking at your feature(s) of interest?

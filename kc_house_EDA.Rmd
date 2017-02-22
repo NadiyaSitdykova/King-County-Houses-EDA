@@ -18,7 +18,7 @@ library(psych)
 library(RColorBrewer)
 ```
 
-This report explores a dataset containing prices and attributes for approximately 22,000 houses.
+This report explores a dataset containing prices and attributes for approximately 22,000 houses. The tidy data was taken from https://www.kaggle.com/harlfoxem/housesalesprediction. Originally, information about house sales was gathered from the official public records. We are going to work here with the dataset, which contains information about homes sold between May 2014 and May 2015 in King County, Washington State. 
 
 ```{r echo=FALSE, Load_the_Data}
 # Load the Data
@@ -35,14 +35,20 @@ kc_house$month <- month(formatted_date)
 kc_house$day <- day(formatted_date)
 # add new columns
 kc_house <- transform(kc_house, price_thousands = price / 1000)
-kc_house <- transform(kc_house, yr_build_or_renovated = max(yr_built, yr_renovated))
+kc_house <- transform(kc_house, yr_build_or_renovated = max(yr_built, 
+                                                            yr_renovated))
 
 # process factors
-kc_house$waterfront <- factor(kc_house$waterfront, levels = c(0, 1), ordered = T)
-kc_house$view <- factor(kc_house$view, levels = c(0:4), ordered = T)
-kc_house$condition <- factor(kc_house$condition, levels = c(1:5), ordered = T)
-kc_house$day <-factor(kc_house$day, levels = c(1:31), ordered = T)
-kc_house$month <- factor(kc_house$month, levels = c(1:12), ordered = T)
+kc_house$waterfront <- factor(kc_house$waterfront, levels = c(0, 1), 
+                              ordered = T)
+kc_house$view <- factor(kc_house$view, levels = c(0:4), 
+                        ordered = T)
+kc_house$condition <- factor(kc_house$condition, levels = c(1:5), 
+                             ordered = T)
+kc_house$day <-factor(kc_house$day, levels = c(1:31), 
+                      ordered = T)
+kc_house$month <- factor(kc_house$month, levels = c(1:12), 
+                         ordered = T)
 ```
 # Univariate Plots Section
 ```{r echo=FALSE, Univariate_Plots_1}
@@ -259,10 +265,15 @@ I log-transformed the right skewed price, sqft_living and sqft_lot ditstribution
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, Bivariate_Plots_1}
 set.seed(20022012)
-house_samp <- kc_house[sample(1:length(kc_house$price), 10000), c(2:12)]
+house_samp <- kc_house[sample(1:length(kc_house$price), 10000), 
+                       c("price", "bedrooms", "bathrooms", "sqft_living", 
+                         "sqft_lot", "yr_built")]
 ggpairs(house_samp, 
   lower = list(continuous = wrap("points", shape = I('.'))), 
-  upper = list(combo = wrap("box", outlier.shape = I('.'))))
+  upper = list(combo = wrap("box", outlier.shape = I('.')))) +
+  theme(
+        axis.ticks = element_blank(),
+        axis.text = element_blank())
 ```
 
 The numbers of bedrooms and bathrooms tend to correlate with each other. The greater number of bathrooms or bedrooms, then the larger the whole living area of the house. Price correlates strongly with living area and number of bathrooms and bedrooms.
@@ -278,14 +289,17 @@ ggplot(data = kc_house, aes(x = sqft_living, y = price_thousands)) +
 ```
 
 ```{r echo=FALSE, warning=FALSE, Bivariate_Plots_3}
-ggplot(data = kc_house, aes(x = round(sqft_living / 100) * 100, y = price_thousands)) +
+ggplot(data = kc_house, 
+       aes(x = round(sqft_living / 100) * 100, y = price_thousands)) +
   geom_point(alpha = 1/20, color = "orange") +
   xlim(0, quantile(kc_house$sqft_living, 0.99)) +
   ylim(0, quantile(kc_house$price_thousands, 0.99)) +
   geom_line(stat = "summary", fun.y = "mean") +
   geom_line(stat = "summary", fun.y = "median", color = "blue") + 
-  geom_line(stat = "summary", fun.y = "quantile", fun.args = list(probs = .1), color = "blue", linetype = 2) +  
-  geom_line(stat = "summary", fun.y = "quantile", fun.args = list(probs = .9), color = "blue", linetype = 2)
+  geom_line(stat = "summary", fun.y = "quantile", 
+            fun.args = list(probs = .1), color = "blue", linetype = 2) +  
+  geom_line(stat = "summary", fun.y = "quantile", 
+            fun.args = list(probs = .9), color = "blue", linetype = 2)
 ```
 
 As living area increases, the variance in price increases. The most houses represent a cloud with a high density below 700 thousands price. The relationship between price and sqft_living appears to be linear.
@@ -348,8 +362,10 @@ ggplot(data = kc_house, aes(x = yr_built, y = price_thousands)) +
   ylim(0, quantile(kc_house$price_thousands, 0.99)) +
   geom_line(stat = "summary", fun.y = "mean") +
   geom_line(stat = "summary", fun.y = "median", color = "blue") + 
-  geom_line(stat = "summary", fun.y = "quantile", fun.args = list(probs = .1), color = "blue", linetype = 2) +  
-  geom_line(stat = "summary", fun.y = "quantile", fun.args = list(probs = .9), color = "blue", linetype = 2)
+  geom_line(stat = "summary", fun.y = "quantile", 
+            fun.args = list(probs = .1), color = "blue", linetype = 2) +  
+  geom_line(stat = "summary", fun.y = "quantile", 
+            fun.args = list(probs = .9), color = "blue", linetype = 2)
 ```
 
 We can see two outliers with price over 4000 before 1950 and significantly more houses with extremely high price built after 1975. Adding transparency and adjusting limits didn't reveal any strong patterns. We can see that medain and mean stays approximately same for different yr_built. But what is clear, is that most houses was built after 1950, as we can see there are more points there.
@@ -384,7 +400,8 @@ ggplot(data = kc_house, aes(x = waterfront, y = price_thousands)) +
   ylim(0, quantile(kc_house$price_thousands, 0.99))
 ```
 ```{r echo=FALSE, Bivariate_Plots_17}
-with(kc_house, cor.test(price_thousands, as.numeric(waterfront), method = 'spearman', conf.level = 0.95, exact = FALSE))
+with(kc_house, cor.test(price_thousands, as.numeric(waterfront), 
+                        method = 'spearman', conf.level = 0.95, exact = FALSE))
 ```
 
 Houses with waterfront seems to have a higher price, but we also should remember that in could be partially result of larger living area. Variation of price is higher for houses with waterfront. Spearman's coefficient shows us that correlation is very weak.
@@ -403,7 +420,8 @@ ggplot(data = kc_house, aes(x = view, y = price_thousands)) +
   ylim(0, quantile(kc_house$price_thousands, 0.99))
 ```
 ```{r echo=FALSE, Bivariate_Plots_20}
-with(kc_house, cor.test(price_thousands, as.numeric(view), method = 'spearman', conf.level = 0.95, exact = FALSE))
+with(kc_house, cor.test(price_thousands, as.numeric(view), 
+                        method = 'spearman', conf.level = 0.95, exact = FALSE))
 
 ```
 
@@ -431,7 +449,8 @@ with(kc_house, by(price_thousands, condition, summary))
 ```
 
 ```{r echo=FALSE, Bivariate_Plots_25}
-with(kc_house, cor.test(price_thousands, as.numeric(condition), method = 'spearman', conf.level = 0.95, exact = FALSE))
+with(kc_house, cor.test(price_thousands, as.numeric(condition), 
+                        method = 'spearman', conf.level = 0.95, exact = FALSE))
 ```
 
 Here we see the similar to living area picture. First two conditions have lower price, but other conditions are not very different. Although excellent condition(5) has highest quartiles for price. Spearmans rank shows us very weak correlation.
@@ -475,7 +494,8 @@ with(kc_house, by(price_thousands, month, summary))
 ```
 
 ```{r echo=FALSE, Bivariate_Plots_32}
-with(kc_house, cor.test(price_thousands, as.numeric(month), method = 'spearman', conf.level = 0.95, exact = FALSE))
+with(kc_house, cor.test(price_thousands, as.numeric(month), 
+                        method = 'spearman', conf.level = 0.95, exact = FALSE))
 ```
 
 Then again, the highest median price is in June and July (465 thousands) and the lowest median price is in February (425.5 thousands). In general there is kind of peak in summer and slight price drop in winter. So, I guess, seasons affect the price very slightly, if at all. Spearmans rank shows us very weak correlation.
@@ -558,31 +578,37 @@ ggplot(data = kc_house, aes(x = month, y = price / sqft_living)) +
 Here we can see the price/sqft median bump in April and then slight decrese from Novermber to January. Variance in each month is approximately the same.
 
 ```{r echo=FALSE, warning=FALSE, Multivariate_Plots_9}
-ggplot(data = kc_house, aes(x = yr_built, y = price_thousands, color = condition)) +
+ggplot(data = kc_house, 
+       aes(x = yr_built, y = price_thousands, color = condition)) +
   geom_point() +
   xlim(min(kc_house$yr_built), quantile(kc_house$yr_built, 0.99)) +
   ylim(0, quantile(kc_house$price_thousands, 0.99)) +
-  scale_color_brewer(type = 'div')
+  scale_color_brewer(type = 'div') +
+  theme_dark()
 ```
 
 ```{r echo=FALSE, warning=FALSE, Multivariate_Plots_10}
-ggplot(data = kc_house, aes(x = yr_built, y = price_thousands, color = condition)) +
+ggplot(data = kc_house, 
+       aes(x = yr_built, y = price_thousands, color = condition)) +
   geom_point() +
   xlim(min(kc_house$yr_built), quantile(kc_house$yr_built, 0.99)) +
   ylim(0, quantile(kc_house$price_thousands, 0.99)) +
   facet_wrap(~view) +
   scale_color_brewer(type = 'div') +
-  ggtitle("Facet wrap by view")
+  ggtitle("Facet wrap by view") +
+  theme_dark()
 ```
 
 ```{r echo=FALSE, warning=FALSE, Multivariate_Plots_11}
-ggplot(data = kc_house, aes(x = yr_built, y = price_thousands, color = condition)) +
+ggplot(data = kc_house, 
+       aes(x = yr_built, y = price_thousands, color = condition)) +
   geom_point() +
   xlim(min(kc_house$yr_built), quantile(kc_house$yr_built, 0.99)) +
   ylim(0, quantile(kc_house$price_thousands, 0.99)) +
   facet_wrap(~waterfront) +
   scale_color_brewer(type = 'div') +
-  ggtitle("Facet wrap by waterfront")
+  ggtitle("Facet wrap by waterfront") +
+  theme_dark()
 ```
 
 Most houses have a condition level 3 and higher. Interestingly, almost all houses built after 2000 seems to be in condition 3. The pattern holds across each level of view and each level of waterfront.
@@ -592,67 +618,84 @@ ggplot(data = kc_house, aes(x = yr_built, y = price_thousands, color = view)) +
   geom_point() +
   xlim(min(kc_house$yr_built), quantile(kc_house$yr_built, 0.99)) +
   ylim(0, quantile(kc_house$price_thousands, 0.99)) +
-  scale_color_brewer(type = 'div')
+  scale_color_brewer(type = 'div') +
+  theme_dark()
 ```
 
 ```{r echo=FALSE, warning=FALSE, Multivariate_Plots_13}
-ggplot(data = kc_house, aes(x = yr_built, y = price_thousands, color = waterfront)) +
+ggplot(data = kc_house, 
+       aes(x = yr_built, y = price_thousands, color = waterfront)) +
   geom_point() +
   xlim(min(kc_house$yr_built), quantile(kc_house$yr_built, 0.99)) +
   ylim(0, quantile(kc_house$price_thousands, 0.99)) +
-  scale_color_brewer(type = 'div')
+  scale_color_brewer(type = 'div') +
+  theme_dark()
 ```
 
 View and waterfront are not correlated with yr_built, nothing particularly stands out.
 
 ```{r echo=FALSE, warning=FALSE, Multivariate_Plots_14}
-ggplot(data = kc_house_renovated, aes(x = yr_renovated, y = price_thousands, color = condition)) +
+ggplot(data = kc_house_renovated, 
+       aes(x = yr_renovated, y = price_thousands, color = condition)) +
   geom_point() +
-  xlim(min(kc_house_renovated$yr_renovated), quantile(kc_house_renovated$yr_renovated, 0.99)) +
+  xlim(min(kc_house_renovated$yr_renovated), 
+       quantile(kc_house_renovated$yr_renovated, 0.99)) +
   ylim(0, quantile(kc_house_renovated$price_thousands, 0.99)) +
-  scale_color_brewer(type = 'div')
+  scale_color_brewer(type = 'div') +
+  theme_dark()
 ```
 
 ```{r echo=FALSE, warning=FALSE, Multivariate_Plots_15}
-ggplot(data = kc_house_renovated, aes(x = yr_renovated, y = price_thousands, color = view)) +
+ggplot(data = kc_house_renovated, 
+       aes(x = yr_renovated, y = price_thousands, color = view)) +
   geom_point() +
-  xlim(min(kc_house_renovated$yr_renovated), quantile(kc_house_renovated$yr_renovated, 0.99)) +
+  xlim(min(kc_house_renovated$yr_renovated), 
+       quantile(kc_house_renovated$yr_renovated, 0.99)) +
   ylim(0, quantile(kc_house_renovated$price_thousands, 0.99)) +
-  scale_color_brewer(type = 'div')
+  scale_color_brewer(type = 'div') +
+  theme_dark()
 ```
 
 ```{r echo=FALSE, warning=FALSE, Multivariate_Plots_16}
-ggplot(data = kc_house_renovated, aes(x = yr_renovated, y = price_thousands, color = waterfront)) +
+ggplot(data = kc_house_renovated, 
+       aes(x = yr_renovated, y = price_thousands, color = waterfront)) +
   geom_point() +
-  xlim(min(kc_house_renovated$yr_renovated), quantile(kc_house_renovated$yr_renovated, 0.99)) +
+  xlim(min(kc_house_renovated$yr_renovated), 
+       quantile(kc_house_renovated$yr_renovated, 0.99)) +
   ylim(0, quantile(kc_house_renovated$price_thousands, 0.99)) +
-  scale_color_brewer(type = 'div')
+  scale_color_brewer(type = 'div') +
+  theme_dark()
 ```
 
 Condition, view and waterfront are not correlated with yr_renovated, nothing particularly stands out.
 
 ```{r echo=FALSE, warning=FALSE, Multivariate_Plots_17}
-ggplot(data = kc_house, aes(x = round(sqft_living / 100) * 100, y = price_thousands, color = view)) +
+ggplot(data = kc_house, aes(x = round(sqft_living / 100) * 100, 
+                            y = price_thousands, color = view)) +
   geom_point(alpha = 1/30) +
   geom_line(stat = 'summary', fun.y = median) +
   xlim(0, quantile(kc_house$sqft_living, 0.99)) +
   ylim(0, quantile(kc_house$price_thousands, 0.99)) +
-  scale_color_brewer(type = 'div')
+  scale_color_brewer(type = 'div') +
+  theme_dark()
 ```
 
 If we account for constant sqft_living value, better view produces a higher-priced house.
 
 ```{r echo=FALSE, warning=FALSE, Multivariate_Plots_18}
-ggplot(data = kc_house, aes(x = round(sqft_living / 100) * 100, y = price_thousands, color = condition)) +
+ggplot(data = kc_house, aes(x = round(sqft_living / 100) * 100, 
+                            y = price_thousands, color = condition)) +
   geom_point(alpha = 1/30) +
   geom_line(stat = "summary", fun.y = median) +
   xlim(0, quantile(kc_house$sqft_living, 0.99)) +
   ylim(0, quantile(kc_house$price_thousands, 0.99)) +
-  scale_color_brewer(type = 'div')
+  scale_color_brewer(type = 'div') +
+  theme_dark()
 ```
 
 ```{r echo=FALSE, warning=FALSE, Multivariate_Plots_19}
-ggplot(data = kc_house, aes(x = round(sqft_living / 100) * 100, y = price_thousands, color = waterfront)) +
+ggplot(data = kc_house, aes(x = round(sqft_living / 100) * 100, 
+                            y = price_thousands, color = waterfront)) +
   geom_point(alpha = 1/30) +
   geom_line(stat = "summary", fun.y = median) +
   xlim(0, quantile(kc_house$sqft_living, 0.99)) +
@@ -714,7 +757,7 @@ The distribution of house prices appears to be unimodal on log scale, with a pri
 ### Plot Two
 ```{r echo=FALSE, Plot_Two}
 ggplot(data = kc_house, aes(x = month, y = price / sqft_living)) + 
-  geom_boxplot(aes(fill = month)) +
+  geom_boxplot() +
   coord_cartesian(ylim = c(150, 350)) +
   ggtitle("Price per sqft by month") +
   theme(plot.title = element_text(hjust = 0.5)) +
@@ -728,12 +771,14 @@ Here we can see the price/sqft median bump in April and then slight decrese from
 
 ### Plot Three
 ```{r echo=FALSE, warning=FALSE, Plot_Three}
-ggplot(data = kc_house, aes(x = round(sqft_living / 100) * 100, y = price_thousands, color = view)) +
+ggplot(data = kc_house, aes(x = round(sqft_living / 100) * 100, 
+                            y = price_thousands, color = view)) +
   geom_point(alpha = 1/30) +
   geom_line(stat = 'summary', fun.y = median) +
   xlim(0, quantile(kc_house$sqft_living, 0.99)) +
   ylim(0, quantile(kc_house$price_thousands, 0.99)) +
   scale_color_brewer(type = 'div') +
+  theme_dark() +
   ggtitle("Median house price by living area and view") +
   theme(plot.title = element_text(hjust = 0.5)) +
   xlab("living area (in sqft)") +

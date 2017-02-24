@@ -33,7 +33,7 @@ kc_house <- kc_house[c('date', 'price', 'bedrooms', 'bathrooms', 'sqft_living',
 formatted_date <- strptime(kc_house$date, "%Y%m%dT000000")
 kc_house$month <- month(formatted_date)
 kc_house$day <- day(formatted_date)
-# add new columns
+kc_house$formatted_date <- format(formatted_date, "%y %b")
 kc_house <- transform(kc_house, price_thousands = price / 1000)
 kc_house <- transform(kc_house, yr_build_or_renovated = max(yr_built, 
                                                             yr_renovated))
@@ -49,6 +49,12 @@ kc_house$day <-factor(kc_house$day, levels = c(1:31),
                       ordered = T)
 kc_house$month <- factor(kc_house$month, levels = c(1:12), 
                          ordered = T)
+kc_house$formatted_date <- factor(kc_house$formatted_date, 
+                                  levels = c("14 May", "14 Jun", "14 Jul", 
+                                             "14 Aug", "14 Sep", "14 Oct", 
+                                             "14 Nov", "14 Dec", "15 Jan", 
+                                             "15 Feb", "15 Mar", "15 Apr", 
+                                             "15 May"), ordered = T)
 ```
 # Univariate Plots Section
 ```{r echo=FALSE, Univariate_Plots_1}
@@ -98,7 +104,7 @@ ggplot(data = kc_house, aes(x = condition)) +
 As we can see, the most houses are not overlooking the waterfront and have view graded as zero. Condition is skewed to the right, with most houses of condition 3 and greater. Also interesting to look at the distribution of day and month when house was sold.
 
 ```{r echo=FALSE, Univariate_Plots_9}
-ggplot(data = kc_house, aes(x = month)) +
+ggplot(data = kc_house, aes(x = formatted_date)) +
   geom_bar()
 ```
 
@@ -107,7 +113,7 @@ ggplot(data = kc_house, aes(x = day)) +
   geom_bar()
 ```
 
-The month data has a peak around May, and have significantly lower count of sold houses in the beginning of the year. Distribution of days looks uniform, with significantly low value at 31st. But this could be explained by absense of 31st in about a half of months, so no surprise here.
+The month data has two peaks in July 2014 and April 2015, and have significantly lower count of sold houses during winter. The low count of houses sold in May 2015 can be explained by the fact that presented data is not for a full month. Distribution of days looks uniform, with significantly low value at 31st. But this could be explained by absense of 31st in about a half of months, so no surprise here.
 
 ```{r echo=FALSE, warning=FALSE, Univariate_Plots_11}
 ggplot(data = kc_house, aes(x = bedrooms)) +
@@ -456,7 +462,7 @@ with(kc_house, cor.test(price_thousands, as.numeric(condition),
 Here we see the similar to living area picture. First two conditions have lower price, but other conditions are not very different. Although excellent condition(5) has highest quartiles for price. Spearmans rank shows us very weak correlation.
 
 ```{r echo=FALSE, warning=FALSE, Bivariate_Plots_26}
-ggplot(data = kc_house, aes(x = month, y = sqft_living)) +
+ggplot(data = kc_house, aes(x = formatted_date, y = sqft_living)) +
   geom_boxplot() +
   ylim(0, quantile(kc_house$sqft_living, 0.99))
 ```
@@ -464,18 +470,18 @@ ggplot(data = kc_house, aes(x = month, y = sqft_living)) +
 It seems that living area have similar distributions during different month, but let's zoom in.
 
 ```{r echo=FALSE, Bivariate_Plots_27}
-ggplot(data = kc_house, aes(x = month, y = sqft_living)) +
+ggplot(data = kc_house, aes(x = formatted_date, y = sqft_living)) +
   geom_boxplot() +
   coord_cartesian(ylim = c(1000, 3000))
 ```
 ```{r echo=FALSE, Bivariate_Plots_28}
-with(kc_house, by(sqft_living, month, summary))
+with(kc_house, by(sqft_living, formatted_date, summary))
 ```
 
-The highest living area median is in July (1950 sqft) and the lowest median is in February(1830 sqft). But actually 120 sqft is not much difference for houses, so I woudn't say that living area isn't similar by months.
+The highest living area median is in 2014 July (1950 sqft) and the lowest median is in 2015 February(1830 sqft). But actually 120 sqft is not much difference for houses, so I woudn't say that living area isn't similar by months.
 
 ```{r echo=FALSE, warning=FALSE, Bivariate_Plots_29}
-ggplot(data = kc_house, aes(x = month, y = price_thousands)) +
+ggplot(data = kc_house, aes(x = formatted_date, y = price_thousands)) +
   geom_boxplot() +
   ylim(0, quantile(kc_house$price_thousands, 0.99))
 ```
@@ -484,13 +490,13 @@ Let's zoom in
 
 ```{r echo=FALSE, Bivariate_Plots_30}
 
-ggplot(data = kc_house, aes(x = month, y = price_thousands)) +
+ggplot(data = kc_house, aes(x = formatted_date, y = price_thousands)) +
   geom_boxplot() +
   coord_cartesian(ylim = c(250, 750))
 ```
 
 ```{r echo=FALSE, Bivariate_Plots_31}
-with(kc_house, by(price_thousands, month, summary))
+with(kc_house, by(price_thousands, formatted_date, summary))
 ```
 
 ```{r echo=FALSE, Bivariate_Plots_32}
@@ -498,7 +504,7 @@ with(kc_house, cor.test(price_thousands, as.numeric(month),
                         method = 'spearman', conf.level = 0.95, exact = FALSE))
 ```
 
-Then again, the highest median price is in June and July (465 thousands) and the lowest median price is in February (425.5 thousands). In general there is kind of peak in summer and slight price drop in winter. So, I guess, seasons affect the price very slightly, if at all. Spearmans rank shows us very weak correlation.
+Then again, the highest median price is in 2014 June and July (465 thousands) and the lowest median price is in 2015 February (425.5 thousands). In general there is kind of peak in summer and slight price drop in winter. So, I guess, seasons affect the price very slightly, if at all. Spearmans rank shows us very weak correlation.
 
 # Bivariate Analysis
 
@@ -565,12 +571,12 @@ with(kc_house, by(price / sqft_living, condition, summary))
 From condition 2 the better conditions have higher median price per sqft. But condition 1 has median price/sqft higher than condition 2 and 3. Also price/sqft has a largest variance for houses in condition 1.
 
 ```{r echo=FALSE, Multivariate_Plots_7}
-ggplot(data = kc_house, aes(x = month, y = price / sqft_living)) + 
+ggplot(data = kc_house, aes(x = formatted_date, y = price / sqft_living)) + 
   geom_boxplot()
 ```
 
 ```{r echo=FALSE, Multivariate_Plots_8}
-ggplot(data = kc_house, aes(x = month, y = price / sqft_living)) + 
+ggplot(data = kc_house, aes(x = formatted_date, y = price / sqft_living)) + 
   geom_boxplot() +
   coord_cartesian(ylim = c(150, 350))
 ```
@@ -756,18 +762,20 @@ The distribution of house prices appears to be unimodal on log scale, with a pri
 
 ### Plot Two
 ```{r echo=FALSE, Plot_Two}
-ggplot(data = kc_house, aes(x = month, y = price / sqft_living)) + 
-  geom_boxplot() +
+ggplot(data = kc_house, aes(x = formatted_date, y = price / sqft_living)) + 
+  geom_point(alpha = 1/20, position="jitter") +
+  geom_boxplot(alpha = 1/5, color = "blue") +
+  geom_point(stat = 'summary', fun.y = mean, color = "red") +
   coord_cartesian(ylim = c(150, 350)) +
   ggtitle("Price per sqft by month") +
   theme(plot.title = element_text(hjust = 0.5)) +
-  xlab("month") +
+  xlab("year and month") +
   ylab("price per sqft (in thousands dollars)")
 ```
 
 ### Description Two
 
-Here we can see the price/sqft median bump in April and then slight decrese from Novermber to January. Variance in each month is approximately the same. So from these picture it seems that winter is the most profitable time to buy a house.
+Data point shown in black, boxplots in blue, mean in red. We can see that price/sqft median and mean rises from 2015 Jan to 2015 May. Also there is a slight decrese from 2014 Novermber to 2014 January. Variance in each month is approximately the same. So from these picture it seems that winter is the most profitable time to buy a house.
 
 ### Plot Three
 ```{r echo=FALSE, warning=FALSE, Plot_Three}

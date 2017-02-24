@@ -431,17 +431,27 @@ with(kc_house, cor.test(price_thousands, as.numeric(view),
 
 ```
 
+```{r echo=FALSE, Bivariate_Plots_20_1}
+view_anova <- with(kc_house, aov(price_thousands ~ view))
+summary(view_anova)
+```
+```{r echo=FALSE, Bivariate_Plots_20_2}
+with(kc_house, pairwise.t.test(price_thousands, view))
+```
+
 Houses with better view seems to have higher price, but then again, we should'n forget about posible effect of larger living area.
-Variation of price have a tendency to increase with better levels of view. Spearmans rank shows us the a weak correlation.
+Variation of price have a tendency to increase with better levels of view. Spearmans rank shows us the a weak correlation. All pairs of view, except 1 and 2 appear to be significantly different at alpha = .05
 
 ```{r echo=FALSE, warning=FALSE, Bivariate_Plots_21}
 ggplot(data = kc_house, aes(x = condition, y = sqft_living)) +
   geom_boxplot() +
   ylim(0, quantile(kc_house$sqft_living, 0.99))
 ```
+
 ```{r echo=FALSE, Bivariate_Plots_22}
 with(kc_house, by(sqft_living, condition, summary))
 ```
+
 
 It seems that houses with poor condition (below 3) have smaller living area, but for other conditions sqft_living distributions are similar. Although condition 3 have highest median and 25%, 75% quantiles. 
 
@@ -450,6 +460,7 @@ ggplot(data = kc_house, aes(x = condition, y = price_thousands)) +
   geom_boxplot() +
   ylim(0, quantile(kc_house$price_thousands, 0.99))
 ```
+
 ```{r echo=FALSE, warning=FALSE, Bivariate_Plots_24}
 with(kc_house, by(price_thousands, condition, summary))
 ```
@@ -459,7 +470,15 @@ with(kc_house, cor.test(price_thousands, as.numeric(condition),
                         method = 'spearman', conf.level = 0.95, exact = FALSE))
 ```
 
-Here we see the similar to living area picture. First two conditions have lower price, but other conditions are not very different. Although excellent condition(5) has highest quartiles for price. Spearmans rank shows us very weak correlation.
+```{r echo=FALSE, Bivariate_Plots_25_1}
+condition_anova <- with(kc_house, aov(price_thousands ~ condition))
+summary(condition_anova)
+```
+
+```{r echo=FALSE, Bivariate_Plots_25_2}
+with(kc_house, pairwise.t.test(price_thousands, condition))
+```
+Here we see the similar to living area picture. First two conditions have lower price, but other conditions are not very different. Although excellent condition(5) has highest quartiles for price. Spearmans rank shows us very weak correlation. All pairs of conditions, except 1 and 2, appear to be significantly different at alpha = .05
 
 ```{r echo=FALSE, warning=FALSE, Bivariate_Plots_26}
 ggplot(data = kc_house, aes(x = formatted_date, y = sqft_living)) +
@@ -557,7 +576,15 @@ ggplot(data = kc_house, aes(x = view, y = price / sqft_living)) +
 with(kc_house, by(price / sqft_living, view, summary))
 ```
 
-The picture now is not so monotonic as it was for a full price. The median price/sqft for view 2 violates the pattern, as it's lower than median for worse view 1.
+```{r echo=FALSE, Multivariate_Plots_4_1}
+view_anova <- with(kc_house, aov(price / sqft_living ~ view))
+summary(view_anova)
+```
+
+```{r echo=FALSE, Multivariate_Plots_4_2}
+with(kc_house, pairwise.t.test(price / sqft_living , view))
+```
+The picture now is not so monotonic as it was for a full price. The median price/sqft for view 2 violates the pattern, as it's lower than median for worse view 1. Only pair of views 1 and 3 appears to be not significantly different at alpha = .05
 
 ```{r echo=FALSE, Multivariate_Plots_5}
 ggplot(data = kc_house, aes(x = condition, y = price / sqft_living)) + 
@@ -568,7 +595,15 @@ ggplot(data = kc_house, aes(x = condition, y = price / sqft_living)) +
 with(kc_house, by(price / sqft_living, condition, summary))
 ```
 
-From condition 2 the better conditions have higher median price per sqft. But condition 1 has median price/sqft higher than condition 2 and 3. Also price/sqft has a largest variance for houses in condition 1.
+```{r echo=FALSE, Multivariate_Plots_4_1}
+condition_anova <- with(kc_house, aov(price / sqft_living ~ condition))
+summary(condition_anova)
+```
+
+```{r echo=FALSE, Multivariate_Plots_4_2}
+with(kc_house, pairwise.t.test(price / sqft_living , condition))
+```
+From condition 2 the better conditions have higher median price per sqft. But condition 1 has median price/sqft higher than condition 2 and 3. Also price/sqft has a largest variance for houses in condition 1. Also condition 1 appears to be not significantly different from any other condition at alpha = .05, as well as pairs 2, 3 and 2, 4.
 
 ```{r echo=FALSE, Multivariate_Plots_7}
 ggplot(data = kc_house, aes(x = formatted_date, y = price / sqft_living)) + 
@@ -586,7 +621,7 @@ Here we can see the price/sqft median bump in April and then slight decrese from
 ```{r echo=FALSE, warning=FALSE, Multivariate_Plots_9}
 ggplot(data = kc_house, 
        aes(x = yr_built, y = price_thousands, color = condition)) +
-  geom_point() +
+  geom_point(alpha = 1/5) +
   xlim(min(kc_house$yr_built), quantile(kc_house$yr_built, 0.99)) +
   ylim(0, quantile(kc_house$price_thousands, 0.99)) +
   scale_color_brewer(type = 'div') +
@@ -596,7 +631,7 @@ ggplot(data = kc_house,
 ```{r echo=FALSE, warning=FALSE, Multivariate_Plots_10}
 ggplot(data = kc_house, 
        aes(x = yr_built, y = price_thousands, color = condition)) +
-  geom_point() +
+  geom_point(alpha = 1/5) +
   xlim(min(kc_house$yr_built), quantile(kc_house$yr_built, 0.99)) +
   ylim(0, quantile(kc_house$price_thousands, 0.99)) +
   facet_wrap(~view) +
@@ -608,7 +643,7 @@ ggplot(data = kc_house,
 ```{r echo=FALSE, warning=FALSE, Multivariate_Plots_11}
 ggplot(data = kc_house, 
        aes(x = yr_built, y = price_thousands, color = condition)) +
-  geom_point() +
+  geom_point(alpha = 1/5) +
   xlim(min(kc_house$yr_built), quantile(kc_house$yr_built, 0.99)) +
   ylim(0, quantile(kc_house$price_thousands, 0.99)) +
   facet_wrap(~waterfront) +
@@ -621,7 +656,7 @@ Most houses have a condition level 3 and higher. Interestingly, almost all house
 
 ```{r echo=FALSE, warning=FALSE, Multivariate_Plots_12}
 ggplot(data = kc_house, aes(x = yr_built, y = price_thousands, color = view)) +
-  geom_point() +
+  geom_point(alpha = 1/5) +
   xlim(min(kc_house$yr_built), quantile(kc_house$yr_built, 0.99)) +
   ylim(0, quantile(kc_house$price_thousands, 0.99)) +
   scale_color_brewer(type = 'div') +
@@ -631,7 +666,7 @@ ggplot(data = kc_house, aes(x = yr_built, y = price_thousands, color = view)) +
 ```{r echo=FALSE, warning=FALSE, Multivariate_Plots_13}
 ggplot(data = kc_house, 
        aes(x = yr_built, y = price_thousands, color = waterfront)) +
-  geom_point() +
+  geom_point(alpha = 1/3) +
   xlim(min(kc_house$yr_built), quantile(kc_house$yr_built, 0.99)) +
   ylim(0, quantile(kc_house$price_thousands, 0.99)) +
   scale_color_brewer(type = 'div') +

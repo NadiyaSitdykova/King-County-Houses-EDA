@@ -767,7 +767,7 @@ ggplot(data = kc_house, aes(x = formatted_date, y = price / sqft_living)) +
   geom_boxplot(alpha = 1/5, color = "blue") +
   geom_point(stat = 'summary', fun.y = mean, color = "red") +
   coord_cartesian(ylim = c(150, 350)) +
-  ggtitle("Price per sqft by month") +
+  ggtitle("Price per sqft by year and month") +
   theme(plot.title = element_text(hjust = 0.5)) +
   xlab("year and month") +
   ylab("price per sqft (in thousands dollars)")

@@ -748,14 +748,38 @@ The pattern is not noticeable here.
 The last 3 plots suggest that we can build a linear model and use those variables in the linear model to predict the price of a house.
 
 ```{r echo=FALSE, Multivariate_Plots_20}
-m1 <- lm(formula = I(price_thousands) ~ I(sqft_living), data = kc_house)
+m0 <- lm(formula = I(price_thousands) ~ I(sqft_living), data = kc_house)
+m1 <- lm(formula = I(log10(price_thousands)) ~I((sqft_living)^(1/2)), data = kc_house)
+mtable(m0, m1, sdigits = 3)
+```
+
+The model m0 has a little bit better R-squared, but let's see the residual plots for these two models.
+
+```{r echo=FALSE, Multivariate_Plots_21}
+kc_house$m0_res <- resid(m0)
+kc_house$m0_fitted_value <- fitted(m0)
+ggplot(data = kc_house, aes(x = m0_fitted_value, y = m0_res)) +
+  geom_point(alpha = 1/20)
+```
+
+```{r echo=FALSE, Multivariate_Plots_22}
+kc_house$m1_res <- resid(m1)
+kc_house$m1_fitted_value <- fitted(m1)
+ggplot(data = kc_house, aes(x = m1_fitted_value, y = m1_res)) +
+  geom_point(alpha = 1/20)
+```
+
+From residual plot for m0 we can see that residuals contain predictive information. With higher fitted_value residuals tend to have larger absolute value. But for model m1 resuduals look more random. So we can say that model m1 has a better fit. Let's find out how
+will fit the models with additional factors.
+
+```{r echo=FALSE, Multivariate_Plots_23}
 m2 <- update(m1, ~ . + view)
-m3 <- update(m1, ~ . + condition)
+m3 <- update(m2, ~ . + condition)
 m4 <- update(m3, ~ . + waterfront)
 mtable(m1, m2, m3, m4, sdigits = 3)
 ```
 
-Adding condition and waterfront to the model didn't improve it. Which isn't surprising, considering absence of the pattern on the plots. So the best version of model predicts price by sqft_living and view. This can account for 54.4% of the variance in the price of houses, which isn't much. I guess, some important factors was missed in this data. 
+Adding new factors imporved model a little bit. But we can see that some levels of condition are not significant and adding waterfront imporves R-squard only by 0.001. Which isn't surprising, considering absence of the pattern on the plots. The best version of model can account for 51.8% of the variance in the price of houses, which isn't much. I guess, some important factors was missed in this data. 
 
 # Multivariate Analysis
 
@@ -775,8 +799,7 @@ It was surprising for me that almost all houses built after 2000 seems to be in 
 
 Yes, I created a linear model starting from the price and the sqft_living.
 
-The variables in the linear model account for 54.4% of the variance in the price of houses. The addition of the view variable to the model improves the R^2 value by five percents, which is expected based on the visualization above of price vs sqft_living and view. Condition and waterfront didn't improve the model.
-
+The variables in the linear model account for 51.8% of the variance in the price of houses. The addition of the view variable to the model improves the R^2 value by three percents, which is expected based on the visualization above of price vs sqft_living and view.
 ------
 
 # Final Plots and Summary
@@ -841,8 +864,8 @@ I started by understending the distributions of individual variables in the data
 
 There was a clear trend between the living area of houes and its price. I was surprised that year when was built a house didn't have strong posititve correaltion with price. But there was a correlation with categorical variables: view, condition and waterfront. I struggled understending why almost all houses built after 2000 had medium condition, but this became more clear when I realized that most of the data contained houses in medium condition. For the linear model, all houses were included since information on price, view, condition and waterfront were available for all the houses. 
 
-Constructed model was able to account only for 54.4% of the variance in the dataset. So my thoughts here is that dataset didn't contain informtaion about important factors, which affect the house price. Perhaps, it wasn't wise to exclude zipcode from consideration, as actually even in the same county prices could depend on neiborhoods. Also proximity to highways or public transportation could affect the price. 
+Constructed model was able to account only for 51.8% of the variance in the dataset. So my thoughts here is that dataset didn't contain informtaion about important factors, which affect the house price. Perhaps, it wasn't wise to exclude zipcode from consideration, as actually even in the same county prices could depend on neiborhoods. Also proximity to highways or public transportation could affect the price. 
 
-Moreover, the model could be much complicated than just a linear. I tried to take a log of price (because price distributions often has long tail) and square root of living area (as it's actually multiplication of two dimensions). But model with this variables without transformation showed better results so I decided to keep it as it is.
+Moreover, the model could be much complicated than just a linear. I tried to take a log of price (because price distributions often has long tail) and square root of living area (as it's actually multiplication of two dimensions). Even givet that model with this variables without transformation showed better R-squared, I decided to keep model with transformation, as it showed better fit on residual plot.
 
 Even if someone will decide to use this model to predict the house price, he/she should keep in mind some limitations. This dataset represents houses sold in 2014 and now prices for the same houses definetely will be higher dut to changes in demand and supply or inflation rates. A more recent dataset would be better to make predictions of house prices and also it could be interesting to analyze more variables, which possibly could affect the price.

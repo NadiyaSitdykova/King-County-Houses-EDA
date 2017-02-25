@@ -749,7 +749,8 @@ The last 3 plots suggest that we can build a linear model and use those variable
 
 ```{r echo=FALSE, Multivariate_Plots_20}
 m0 <- lm(formula = I(price_thousands) ~ I(sqft_living), data = kc_house)
-m1 <- lm(formula = I(log10(price_thousands)) ~I((sqft_living)^(1/2)), data = kc_house)
+m1 <- lm(formula = I(log10(price_thousands)) ~I((sqft_living)^(1/2)), 
+         data = kc_house)
 mtable(m0, m1, sdigits = 3)
 ```
 
@@ -797,9 +798,9 @@ It was surprising for me that almost all houses built after 2000 seems to be in 
 
 ### OPTIONAL: Did you create any models with your dataset? Discuss the strengths and limitations of your model.
 
-Yes, I created a linear model starting from the price and the sqft_living.
+Yes, I created a linear model starting from the price and the sqft_living. The variables in the linear model account for 51.8% of the variance in the price of houses. The addition of the view variable to the model improves the R^2 value by three percents, which is expected based on the visualization above of price vs sqft_living and view.
 
-The variables in the linear model account for 51.8% of the variance in the price of houses. The addition of the view variable to the model improves the R^2 value by three percents, which is expected based on the visualization above of price vs sqft_living and view.
+
 ------
 
 # Final Plots and Summary
